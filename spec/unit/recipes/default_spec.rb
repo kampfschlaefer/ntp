@@ -52,6 +52,11 @@ describe 'ntp::default' do
       expect(chef_run).to create_cookbook_file('/etc/ntp.leapseconds')
     end
 
+    it 'has leapseconds in the leapfile' do
+      expect(chef_run).to create_file_with_content('/etc/ntp.leapseconds', /^3345062400.+/)
+      expect(chef_run).to create_file_with_content('/etc/ntp.leapseconds', /^3345062400[\t ]+33[\t ]+# 1 Jan 2006$/)
+    end
+
     it 'is owned by ntp:ntp' do
       expect(cookbook_file.owner).to eq('root')
       expect(cookbook_file.group).to eq('root')
@@ -67,6 +72,11 @@ describe 'ntp::default' do
 
     it 'creates the template' do
       expect(chef_run).to create_file('/etc/ntp.conf')
+    end
+
+    it 'creates the template with content' do
+      expect(chef_run).to create_file_with_content('/etc/ntp.conf', /.*Chef.*/)
+      expect(chef_run).to create_file_with_content('/etc/ntp.conf', /.*server 0\.pool\.ntp\.org.*/)
     end
 
     it 'is owned by ntp:ntp' do
@@ -265,6 +275,25 @@ describe 'ntp::default' do
 
     it 'sets ntpd to start on boot' do
       expect(chef_run).to set_service_to_start_on_boot('ntpd')
+    end
+  end
+end
+
+describe 'ntp::default attributes' do
+  let(:chef_run) do
+    ChefSpec::ChefRunner.new do |node|
+      node.set['ntp']['servers'] = ['1.servers.example.com', '0.servers.example.com']
+      node.set['ntp']['peers'] = ['1.peers.example.com', '0.peers.example.com']
+    end.converge('ntp::default')
+  end
+
+  context 'the ntp.conf' do
+    it 'orders the peers' do
+      expect(chef_run).to create_file('/etc/ntp.conf')
+      expect(chef_run).to create_file_with_content(
+        '/etc/ntp.conf',
+        /^peer 0.peers.example.com iburst\npeer 1.peers.example.com iburst$/
+      )
     end
   end
 end
