@@ -292,7 +292,21 @@ describe 'ntp::default attributes' do
       expect(chef_run).to create_file('/etc/ntp.conf')
       expect(chef_run).to create_file_with_content(
         '/etc/ntp.conf',
-        /^peer 0.peers.example.com iburst\npeer 1.peers.example.com iburst$/
+        'peer 0.peers.example.com iburst
+restrict 0.peers.example.com nomodify
+peer 1.peers.example.com iburst
+restrict 1.peers.example.com nomodify'
+      )
+    end
+
+    it 'orders the servers' do
+      expect(chef_run).to create_file('/etc/ntp.conf')
+      expect(chef_run).to create_file_with_content(
+        '/etc/ntp.conf',
+        'server 0.servers.example.com iburst
+restrict 0.servers.example.com nomodify notrap noquery
+server 1.servers.example.com iburst
+restrict 1.servers.example.com nomodify notrap noquery'
       )
     end
   end
